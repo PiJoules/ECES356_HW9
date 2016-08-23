@@ -2,46 +2,50 @@ clear;
 close all;
 clc;
 
+figure;
+
 % ZN Continuous method
 sys = tf([1], [1 6 11 6 0]);
 kp = 6;
 ki = 6/pi;
 kd = 3*pi/2;
-pid = tf([kd kp ki], [1 0]);
-fb = feedback(pid*sys, 1);
-figure;
-step(fb);
+step_from_pid(sys, kp, ki, kd);
+hold on;
 
 % ZN Damped Oscillation method
-kp = 1;
-ki = 0;
-kd = 0;
-pid = tf([kd kp ki], [1 0]);
-fb = feedback(pid*sys, 1);
-[y, t] = step(fb);
+[kp, ki, kd] = damped_oscillation_tuning(sys);
+step_from_pid(sys, kp, ki, kd);
+hold on;
 
-peak1_idx = find_nth_peak(y, 1);
-peak1 = y(peak1_idx);
-peak1_time = t(peak1_idx);
+% ZN Reaction Curve
+[N, L, ~]=find_curve(sys, 0.3, 0.7);
+delta = 1;
+kp = 1.2*delta/N/L;
+ti = L/0.5;
+td = 0.5*L;
+ki = kp/ti;
+kd = kp*td;
+step_from_pid(sys, kp, ki, kd);
+hold on;
 
-peak2_idx = find_nth_peak(y, 2);
-peak2 = y(peak2_idx);
-peak2_time = t(peak2_idx);
+% ZN Coon Reaction Curve
+[N, L, T]=find_curve(sys, 0.3, 0.7);
+delta = 1;
+% Slides have K as steady state output value,
+% but this website:\
+% https://matlabexamples.wordpress.com/2013/08/16/pid-controller-tuning-using-process-reaction-curve-or-cohen-coon-method/
+% has K as N*T. I will stick with lecture slide on this one.
+K = 1;
 
-ratio = peak2/peak1;
-while ratio > 1/4
-    kp = kp + 0.1;
-    pid = tf([kd kp ki], [1 0]);
-    fb = feedback(pid*sys, 1);
-    [y, t] = step(fb);
-    
-    peak1_idx = find_nth_peak(y, 1);
-    peak1 = y(peak1_idx);
-    peak1_time = t(peak1_idx);
+kp = T/(K*L)*(1.33+L/(4*T));
+ti = L*(32+6*L/T)/(13+8*L/T);
+td = L*(4/(11+2*L/T));
 
-    peak2_idx = find_nth_peak(y, 2);
-    peak2 = y(peak2_idx);
-    peak2_time = t(peak2_idx);
+ki = kp/ti;
+kd = kp*td;
+step_from_pid(sys, kp, ki, kd);
 
-    ratio = peak2/peak1;
-end
+legend('Continuous',...
+       'Damped Oscillation',...
+       'Reaction Curve',...
+       'Coon Reaction Curve');
