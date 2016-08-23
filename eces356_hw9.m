@@ -49,3 +49,23 @@ legend('Continuous',...
        'Damped Oscillation',...
        'Reaction Curve',...
        'Coon Reaction Curve');
+   
+% Prob 2
+figure;
+sys = tf([1], [1 3 2]);
+
+step_from_pid(sys, 13, 0, 0);
+hold on;
+
+step_from_pid(sys, 10, 2, 0);
+hold on;
+
+% This is not a realistic controller, but it meets the requirements of <10%
+% OS and very fast rise time.
+% Values for this were actually Kp=10, Ki=6, and Kd=2 before these.
+step_from_pid(sys, 1000000000, 1, 100000);
+
+legend(sprintf('Kp=1000000000'),...
+       sprintf('Kp=1000000000, Ki=1'),...
+       sprintf('Kp=1000000000, Ki=1, Kd=100000'));
+
